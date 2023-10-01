@@ -3,9 +3,10 @@
   "hostRequirements": {
     "cpus": 4
   },
+  "postCreateCommand": "pip install pipenv && pipenv install --dev",
+  "postAttachCommand": "pipenv shell",
   "waitFor": "onCreateCommand",
-  "updateContentCommand": "python3 -m pip install -r requirements.txt",
-  "postCreateCommand": "",
+  "updateContentCommand": "pip install pipenv && pipenv install --dev",
   "customizations": {
     "codespaces": {
       "openFiles": []
@@ -14,7 +15,12 @@
       "extensions": [
         "ms-toolsai.jupyter",
         "ms-python.python"
-      ]
+      ],
+      "settings": {
+        "python.pythonPath": "${containerWorkspaceFolder}/.venv/bin/python",
+        "python.format.sortImports": true,
+        "python.testing.pytestEnabled": true
+      }
     }
   }
 }
