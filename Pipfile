@@ -8,6 +8,10 @@ pandas = "*"
 pyarrow = "*"
 fastparquet = "*"
 nltk = "*"
+langchain = "*"
+openai = "*"
+chromadb = "*"
+langchainhub = "*"
 
 [dev-packages]
 ipykernel = "*"

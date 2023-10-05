@@ -17,8 +17,15 @@ def read_data(json_path: str) -> pd.DataFrame:
         pandas.DataFrame: The data as a pandas DataFrame.
     """
     print("Reading scrape data")
-    dataframe = pd.read_json(json_path, lines=True)
-    return dataframe[['url', 'text', 'fileUrl']]
+    dataframe = pd.read_json(
+        json_path, orient='records', lines=True)
+
+    # Assuming 'metadata' is the column with the nested dictionaries and you want to extract the 'title'
+    dataframe['title'] = dataframe['metadata'].apply(
+        lambda x: x.get('title', None))
+
+    dataframe = dataframe[['url', 'text', 'fileUrl', 'title']]
+    return dataframe
 
 
 def extract_domain(dataframe: pd.DataFrame) -> pd.DataFrame:
@@ -65,21 +72,6 @@ def where_domain_name(dataframe: pd.DataFrame, domain: str) -> pd.DataFrame:
     return dataframe[dataframe['domain'] == domain]
 
 
-def create_directory(domain: str) -> str:
-    """
-    Creates a directory for a given domain.
-
-    Args:
-        domain (str): The domain name.
-
-    Returns:
-        str: The path to the created directory.
-    """
-    school_path = f"{SCHOOLS_DATA}/{domain}"
-    os.makedirs(school_path, exist_ok=True)
-    return school_path
-
-
 def where_text_null(dataframe: pd.DataFrame) -> pd.DataFrame:
     """
     Filters out rows with null text from a pandas DataFrame.
@@ -116,6 +108,4 @@ def process_apify_scrape(input_json_path: str) -> pd.DataFrame:
     print(f"Filtered data to {len(df)} rows with domain {top_domain}")
     df = where_text_null(df)
     print(f"Filtered data to {len(df)} rows with non-null text")
-    return df
-
     return df
