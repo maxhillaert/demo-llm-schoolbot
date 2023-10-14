@@ -10,8 +10,10 @@ fastparquet = "*"
 nltk = "*"
 langchain = "*"
 openai = "*"
-chromadb = "*"
+chromadb = "0.3.29"
 langchainhub = "*"
+tiktoken = "*"
+lark = "*"
 
 [dev-packages]
 ipykernel = "*"

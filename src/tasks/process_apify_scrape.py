@@ -1,7 +1,11 @@
 import pandas as pd
+from urllib.parse import urlparse, unquote
 import os
-from urllib.parse import urlparse
+import requests
 
+import logging
+
+logger = logging.getLogger(__name__)
 
 SCHOOLS_DATA: str = "data/schools"
 
@@ -85,7 +89,41 @@ def where_text_null(dataframe: pd.DataFrame) -> pd.DataFrame:
     return dataframe[dataframe['text'].notna()]
 
 
-def process_apify_scrape(input_json_path: str) -> pd.DataFrame:
+def download_file(url: str, dir_name: str) -> str:
+    # Get the file name from the URL
+    file_name = unquote(urlparse(url).path.split("/")[-1])
+    local_path = os.path.join(dir_name, file_name)
+
+    # Ensure directory exists
+    os.makedirs(dir_name, exist_ok=True)
+
+    try:
+        response = requests.get(url, stream=True)
+        # Will raise an HTTPError if the HTTP request returned an unsuccessful status code
+        response.raise_for_status()
+
+        # Download the file and save it locally
+        with open(local_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+
+        return local_path
+    except requests.RequestException as e:
+        logger.warning(f"Failed to download {url}. Reason: {e}")
+        return None
+
+
+def process_file_urls(row: pd.Series, download_files_path: str):
+    file_url = row['fileUrl']
+    if pd.notnull(file_url):
+        ext = file_url.split('.')[-1]
+        local_path = download_file(
+            file_url, os.path.join(download_files_path, ext))
+        return local_path
+    return None
+
+
+def process_apify_scrape(input_json_path: str, download_files_path: str) -> pd.DataFrame:
     """
     Processes an Apify scrape by reading in the data from a JSON file, extracting the domain,
     filtering the data by the top domain, and filtering out entries with null text.
@@ -105,7 +143,12 @@ def process_apify_scrape(input_json_path: str) -> pd.DataFrame:
     top_domain = get_top_domain(df)
     print(f"Top domain is {top_domain}")
     df = where_domain_name(df, top_domain)
+    print("Stripping title whitespace")
+    df['title'] = df['title'].str.strip()
     print(f"Filtered data to {len(df)} rows with domain {top_domain}")
-    df = where_text_null(df)
-    print(f"Filtered data to {len(df)} rows with non-null text")
+    print("Downloading files...")
+    df['fileUrlLocal'] = df.apply(
+        lambda r: process_file_urls(r, download_files_path),
+        axis=1
+    )
     return df
