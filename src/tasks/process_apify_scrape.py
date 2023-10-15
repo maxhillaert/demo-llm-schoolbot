@@ -89,10 +89,15 @@ def where_text_null(dataframe: pd.DataFrame) -> pd.DataFrame:
     return dataframe[dataframe['text'].notna()]
 
 
-def download_file(url: str, dir_name: str) -> str:
+def download_file(url: str, dir_name: str, overwrite: bool) -> str:
+
     # Get the file name from the URL
     file_name = unquote(urlparse(url).path.split("/")[-1])
     local_path = os.path.join(dir_name, file_name)
+
+    if (not overwrite) and os.path.exists(local_path):
+        print(f"Already downloaded {local_path}.")
+        return local_path
 
     # Ensure directory exists
     os.makedirs(dir_name, exist_ok=True)
@@ -107,6 +112,7 @@ def download_file(url: str, dir_name: str) -> str:
             for chunk in response.iter_content(chunk_size=8192):
                 f.write(chunk)
 
+        print(f"Downloaded {local_path}")
         return local_path
     except requests.RequestException as e:
         logger.warning(f"Failed to download {url}. Reason: {e}")
@@ -118,7 +124,9 @@ def process_file_urls(row: pd.Series, download_files_path: str):
     if pd.notnull(file_url):
         ext = file_url.split('.')[-1]
         local_path = download_file(
-            file_url, os.path.join(download_files_path, ext))
+            file_url, os.path.join(download_files_path, ext),
+            False
+        )
         return local_path
     return None
 
